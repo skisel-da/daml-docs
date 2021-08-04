@@ -1,0 +1,50 @@
+.. Copyright (c) 2021 Digital Asset (Switzerland) GmbH and/or its affiliates. All rights reserved.
+.. SPDX-License-Identifier: Apache-2.0
+
+.. _module-da-list-total-43846:
+
+Module DA.List.Total
+====================
+
+Functions
+---------
+
+.. _function-da-list-total-head-74336:
+
+`head <function-da-list-total-head-74336_>`_
+  \: :ref:`ActionFail <class-da-internal-prelude-actionfail-8575>` m \=\> \[a\] \-\> m a
+
+.. _function-da-list-total-tail-79400:
+
+`tail <function-da-list-total-tail-79400_>`_
+  \: :ref:`ActionFail <class-da-internal-prelude-actionfail-8575>` m \=\> \[a\] \-\> m \[a\]
+
+.. _function-da-list-total-last-89790:
+
+`last <function-da-list-total-last-89790_>`_
+  \: :ref:`ActionFail <class-da-internal-prelude-actionfail-8575>` m \=\> \[a\] \-\> m a
+
+.. _function-da-list-total-init-82764:
+
+`init <function-da-list-total-init-82764_>`_
+  \: :ref:`ActionFail <class-da-internal-prelude-actionfail-8575>` m \=\> \[a\] \-\> m \[a\]
+
+.. _function-da-list-total-bangbang-23030:
+
+`(!!) <function-da-list-total-bangbang-23030_>`_
+  \: :ref:`ActionFail <class-da-internal-prelude-actionfail-8575>` m \=\> \[a\] \-\> :ref:`Int <type-ghc-types-int-68728>` \-\> m a
+
+.. _function-da-list-total-foldl1-42644:
+
+`foldl1 <function-da-list-total-foldl1-42644_>`_
+  \: :ref:`ActionFail <class-da-internal-prelude-actionfail-8575>` m \=\> (a \-\> a \-\> a) \-\> \[a\] \-\> m a
+
+.. _function-da-list-total-foldr1-20338:
+
+`foldr1 <function-da-list-total-foldr1-20338_>`_
+  \: :ref:`ActionFail <class-da-internal-prelude-actionfail-8575>` m \=\> (a \-\> a \-\> a) \-\> \[a\] \-\> m a
+
+.. _function-da-list-total-foldbalanced1-80423:
+
+`foldBalanced1 <function-da-list-total-foldbalanced1-80423_>`_
+  \: :ref:`ActionFail <class-da-internal-prelude-actionfail-8575>` m \=\> (a \-\> a \-\> a) \-\> \[a\] \-\> m a
