@@ -1,0 +1,171 @@
+.. Copyright (c) 2021 Digital Asset (Switzerland) GmbH and/or its affiliates. All rights reserved.
+.. SPDX-License-Identifier: Apache-2.0
+
+.. _ops-connect-content_index:
+
+Connect Helm Chart
+==================
+
+As of 1.18.0, we provide an Early Access version of the Connect Helm Chart for
+Entreprise Edition customers. This page contains documentation for that Helm
+chart.
+
+Credentials
+-----------
+
+The Helm chart relies on the production-ready Docker images for individual
+components that are part of the Entreprise Edition. Specifically, it expects a
+Kubernetes secret given as the ``imagePullSecret`` argument with the relevant
+Docker credentials in it.
+
+Here is an example script that would load said credentials in a secret named
+``daml-docker-credentials``:
+
+.. code-block:: bash
+
+    #!/usr/bin/env bash
+
+    set -euo pipefail
+
+    if [ -z ${DOCKER_PASSWORD+x} ] || [ -z ${DOCKER_LOGIN+x} ]; then
+        echo "Please input information from:"
+        echo "https://digitalasset.jfrog.io/ui/admin/artifactory/user_profile"
+        read -p "User Profile (first.last): " USERNAME
+        read -p "API Key: " -s PASSWORD
+    else
+        USERNAME="$DOCKER_LOGIN"
+        PASSWORD="$DOCKER_PASSWORD"
+    fi
+
+    temp=$(mktemp)
+    trap "rm -f $temp" EXIT
+
+    cred=$(echo -n "$USERNAME:$PASSWORD" | base64)
+    jq -n --arg cred "$cred" '
+      ["-daml-on-sql","-http-json","-oauth2-middleware","-trigger-service",""]
+      | map({("digitalasset" + . + "-docker.jfrog.io"):{"auth":$cred}})
+      | add
+      | {auths: .}
+      ' > $temp
+
+    kubectl create secret generic daml-docker-credentials \
+            --from-file=.dockerconfigjson=$temp \
+            --type=kubernetes.io/dockerconfigjson
+
+    rm -f $temp
+    trap - EXIT
+
+Quickstart
+----------
+
+The Helm chart is designed to let you get started quickly, using a default
+configuration that is decidedly **NOT MEANT FOR PRODUCTION USE**.
+
+To get started against a development cluster, you can just run::
+
+  helm install dm ./daml-connect \
+       --set imagePullSecret=daml-docker-credentials
+
+This assumes you have used the above script to setup your credentials, or
+otherwise named the secret ``-daml-docker-credentials``. It also assumes you
+run this command from a directory where the chart is available in the
+``daml-connect`` folder.
+
+This is going to start the following:
+
+- A PostgreSQL database, with very brittle, non-production-ready configuration.
+  For a production setup, please provide your own database coordinates (see
+  below).
+- A fake, testing-only JWT minter to serve as the authentication server. This
+  should be replaced with a real authentication server for production use. See
+  the :ref:`auth0` section for an example.
+- A Daml Driver For PostgreSQL instance.
+- An :ref:`json-api` instance.
+
+Production Setup
+----------------
+
+TODO: document minimum set of variables that must be set for a production setup
+(database connections, auth URL, etc.).
+
+Log Aggregation
+---------------
+
+All processes write their logs directly to stdout. This means that log
+aggregation can be addressed at the Kubernetes level and doe snot require any
+specific support from the Helm chart itself. One fairly easy way to achieve
+this is using `Filebeat <https://www.elastic.co/beats/filebeat>`_, which
+regulary collects the logs of your containers and ingests them into
+`Elasticsearch <https://www.elastic.co/elasticsearch/>`,
+`Logstash <https://www.elastic.co/logstash/>`_,
+`Kafka <https://kafka.apache.org/>`_, etc.
+
+You can find external documentation on, how to setup `ElasticSearch` with
+`Filebeat` and `Kibana` for analyzing logs on your Kubernetes cluster
+`here <https://www.deepnetwork.com/blog/2020/01/27/ELK-stack-filebeat-k8s-deployment.html>`_.
+
+As of 1.18.0, the :ref:`HTTP JSON API <json-api>` component in the Helm chart produces
+JSON-encoded logs. Other components log in somewhat less structured formats.
+
+Daml Metrics Options
+--------------------
+
+The Daml Driver for PostgreSQL instance and the HTTP JSON API instances started
+by the Helm chart are configured to expose Prometheus metrics on a port named
+`metrics`, using the appropriate annotations. This means that, if you are
+running a cluster-wide Prometheus instance, the relevant metrics should be
+collected automatically.
+
+See each component's documentation for details on the metrics exposed:
+
+- `Daml Driver for PostgreSQL </daml-driver-for-postgresql/#types-of-metrics>`_
+- :ref:`JSON API metrics <json-api-metrics>`
+
+Upgrading
+---------
+
+Upgrading the Daml Connect version should be done by uninstalling the exiting
+Helm chart and installing a new one. Destroying all of the components is a safe
+operation because all of the state is stored in the provided database
+coordinates. There is no additional state within the components themselves.
+
+The components are not designed for running concurrently with older versions,
+so it is imperative to wait for the existing Helm chart components to be
+completely shut down before installing the new one. Do not try to upgrade in
+place.
+
+Backing Up
+----------
+
+For a production setup, you should be providing the Helm chart with external
+database coordinates. The simplest approach here is to periodically back up
+those databases as a whole, just like you would any other database.
+
+If you want to be more fine-grained, you *may* decide to **not** backup the
+database used by the HTTP JSON API instances. Note that it is imperative that
+you still bakup the databases for the other components (Trigger Service and
+Daml Driver for PostgreSQL) if you are running them.
+
+If you are running the Helm chart solely for the HTTP JSON API (connected to an
+external Ledger API server), then you can eschew backing up entirely, as the
+database for the JSON API is an easy-to-reconstruct cache. This assume that, in
+this setup, the data store of the Ledger API server is, itself, properly backed
+up.
+
+Securing Daml Connect
+---------------------
+
+The Helm chart assumes that the Kubernetes environment itself is trusted, and
+as such does not encrypt connections between components. Full TLS encryption
+between every component is not supported by the Helm chart. Individual
+components do support it, so if that is a requirement for you you can still set
+it up. Refer to the
+`Secure Daml Infrastructure <https://github.com/digital-asset/ex-secure-daml-infra>`_
+repository for guidance on how to set that up.
+
+TODO: schema with nginx
+
+Helm Chart Options Reference
+----------------------------
+
+TODO: copy over Configuration.md
